@@ -1,5 +1,5 @@
 #ifndef CHIP8
-#define CHIP_8
+#define CHIP8
 
 #include <array>
 #include <cstdint>
@@ -20,7 +20,9 @@ class Chip8 {
         uint16_t opcode; // current instruction
         bool draw_flag; // true when graphics need to be drawn
     public:
+        Chip8();
         void load_rom(std::string path);
         void emulate_cycle();
 };
+
 #endif

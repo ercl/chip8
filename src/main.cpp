@@ -2,6 +2,7 @@
 #include <array>
 #include <iostream>
 #include <cstdint>
+#include "chip8.h"
 
 constexpr int WIDTH = 64;
 constexpr int HEIGHT = 32;
@@ -52,6 +53,9 @@ int main() {
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
     SDL_RenderPresent(renderer);
+
+    Chip8 chip8;
+    chip8.load_rom("../roms/PONG");
 
     bool quit = false;
     while (!quit) {
