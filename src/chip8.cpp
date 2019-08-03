@@ -66,10 +66,10 @@ void Chip8::emulate_cycle() {
     uint16_t x = (opcode & 0x0F00) >> 8;        // second 4 bits e.g. 0xA(B)CD
     uint16_t y = (opcode & 0x00F0) >> 4;        // third 4 bits e.g. 0xAB(C)D
     uint16_t kk = opcode & 0x00FF;              // lower byte e.g. 0xAB(CD)
+    uint16_t n = opcode & 0x000F;               // last 4 bits e.g. 0xABC(D)
 
     switch (opcode & 0xF000) {  // first 4 bits decide the instruction
-        // first 4 bits are 0, possible instructions are 0x00E0 or 0x00EE
-        case 0x0000:
+        case 0x0000:            // possible instructions are 0x00E0 or 0x00EE
             switch (opcode) {
                 case 0x00E0:  // clear display
                     graphics.fill(0);
@@ -80,8 +80,95 @@ void Chip8::emulate_cycle() {
                     pc = stack[--sp];
                     pc += 2;
                     break;
-                default: // invalid opcode found
+                default:  // invalid opcode found
                     std::cerr << "Undefined 0x0000 opcode: " << opcode << "\n";
             }
+            break;
+        case 0x1000:  // 0x1nnn, jump to address nnn
+            pc = opcode & 0x0FFF;
+            break;
+        case 0x2000:           // 0x2nnn, call address nnn
+            stack[sp++] = pc;  // store current address on stack first
+            pc = opcode & 0x0FFF;
+            break;
+        case 0x3000:  // 0x3xkk, skip next instruction if Vx = kk
+            pc += 2;
+            if (V[x] == kk) {
+                pc += 2;
+            }
+            break;
+        case 0x4000:  // 0x4xk, skip next instruction if Vx != kk
+            pc += 2;
+            if (V[x] != kk) {
+                pc += 2;
+            }
+            break;
+        case 0x5000:  // 0x5xy0, skip next instruction if Vx == Vy
+            pc += 2;
+            if (V[x] == V[y]) {
+                pc += 2;
+            }
+            break;
+        case 0x6000:  // 0x6xkk, puts value kk into Vx
+            pc += 2;
+            V[x] = kk;
+            break;
+        case 0x7000:  // 0x7xkk, set Vx = Vx + kk
+            pc += 2;
+            V[x] += kk;
+            break;
+        case 0x8000:          // possible instructions are 0x8xy(0-7, E)
+            switch (n) {      // check last 4 bits, 0xABC(D)
+                case 0x0000:  // 0x8xy0, set Vx = Vy
+                    pc += 2;
+                    V[x] = V[y];
+                    break;
+                case 0x0001:  // 0x8xy1, set Vx = Vx OR Vy
+                    pc += 2;
+                    V[x] |= V[y];
+                    break;
+                case 0x0002:  // 0x8xy2, set Vx = Vx AND Vy
+                    pc += 2;
+                    V[x] &= V[y];
+                    break;
+                case 0x0003:  // 0x8xy3, set Vx = Vx XOR Vy
+                    pc += 2;
+                    V[x] ^= V[y];
+                    break;
+                case 0x0004:  // 0x8xy4, set Vx = Vx + Vy, VF = carry
+                    pc += 2;
+                    V[0xF] = (V[x] + V[y]) > 0xFF;  // VF = 1 if carry occurs
+                    V[x] += V[y];
+                    break;
+                case 0x0005:  // 0x8xy5, set Vx = Vx - Vy, VF = NOT borrow
+                    pc += 2;
+                    V[0xF] = V[x] > V[y];
+                    V[x] -= V[y];
+                    break;
+                case 0x0006:  // 0x8xy6, Vx = Vx SHR 1, VF = LSB prior to shift
+                    pc += 2;
+                    V[0xF] = V[x] & 1;  // set as V[x]'s least significant bit
+                    V[x] = V[y] >>= 1; // deviation from CowGod technical doc
+                    break;
+                case 0x0007:  // 0x8xy7, set Vx = Vy - Vx, VF = NOT borrow
+                    pc += 2;
+                    V[0xF] = V[y] > V[x];
+                    V[x] = V[y] - V[x];
+                    break;
+                case 0x000E:  // 0x8xyE, Vx = Vx SHL 1, VF = MSB prior to shift
+                    pc += 2;
+                    V[0xF] = V[x] >> 7;  // MSB = 8th bit since VF is an uint8_t
+                    V[x] = V[y] <<= 1;
+                    break;
+                default:  // invalid opcode found
+                    std::cerr << "Undefined 0x8000 opcode: " << opcode << "\n";
+            }
+            break;
+        case 0x9000:  // 0x9xy0, skip next instruction if Vx != Vy
+            pc += 2;
+            if (V[x] != V[y]) {
+                pc += 2;
+            }
+            break;
     }
 }
