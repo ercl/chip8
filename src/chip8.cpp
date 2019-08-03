@@ -1,6 +1,7 @@
 #include "chip8.h"
 #include <fstream>
 #include <iostream>
+#include <random>
 #include <vector>
 
 Chip8::Chip8() {
@@ -148,7 +149,7 @@ void Chip8::emulate_cycle() {
                 case 0x0006:  // 0x8xy6, Vx = Vx SHR 1, VF = LSB prior to shift
                     pc += 2;
                     V[0xF] = V[x] & 1;  // set as V[x]'s least significant bit
-                    V[x] = V[y] >>= 1; // deviation from CowGod technical doc
+                    V[x] = V[y] >>= 1;  // deviation from CowGod technical doc
                     break;
                 case 0x0007:  // 0x8xy7, set Vx = Vy - Vx, VF = NOT borrow
                     pc += 2;
@@ -158,7 +159,7 @@ void Chip8::emulate_cycle() {
                 case 0x000E:  // 0x8xyE, Vx = Vx SHL 1, VF = MSB prior to shift
                     pc += 2;
                     V[0xF] = V[x] >> 7;  // MSB = 8th bit since VF is an uint8_t
-                    V[x] = V[y] <<= 1;
+                    V[x] = V[y] <<= 1;   // deviation from CowFod technical doc
                     break;
                 default:  // invalid opcode found
                     std::cerr << "Undefined 0x8000 opcode: " << opcode << "\n";
@@ -170,5 +171,19 @@ void Chip8::emulate_cycle() {
                 pc += 2;
             }
             break;
+        case 0xA000:  // 0xAnnn, set I = nnn
+            pc += 2;
+            I = opcode & 0xFFF;
+            break;
+        case 0xB000:  // 0xBnnn, jump to location nnn + V0
+            pc = (opcode & 0xFFF) + V[0];
+            break;
+        case 0xC000:  // 0xCxkk, set Vx = random byte and kk
+            pc += 2;
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> dis(0, 255);
+            V[x] = dis(gen) & kk;
+        case 0xD000:  // 0xDxyn
     }
 }
