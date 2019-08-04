@@ -1,7 +1,7 @@
 #include <SDL2/SDL.h>
 #include <array>
-#include <iostream>
 #include <cstdint>
+#include <iostream>
 #include "chip8.h"
 
 constexpr int WIDTH = 64;
@@ -40,9 +40,9 @@ int main() {
         sdl_error();
     }
 
-    std::array<uint32_t, 64 * 32> spixels;
+    std::array<std::uint32_t, 64 * 32> spixels;
     spixels.fill(0xFFFFFFFF);
-    uint32_t* pixels = nullptr;
+    std::uint32_t* pixels = nullptr;
     int pitch;
 
     SDL_LockTexture(texture, nullptr, reinterpret_cast<void**>(&pixels), &pitch);

@@ -1,4 +1,5 @@
 #include "chip8.h"
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -27,8 +28,11 @@ Chip8::Chip8() {
     // nothing to draw initially
     draw_flag = false;
 
+    // initialize random number generator
+    gen.seed(rd());
+
     // load the fontset into memory
-    std::array<uint8_t, 80> fontset = {{
+    std::array<std::uint8_t, 80> fontset = {{
         0xF0, 0x90, 0x90, 0x90, 0xF0,  // 0
         0x20, 0x60, 0x20, 0x20, 0x70,  // 1
         0xF0, 0x10, 0xF0, 0x80, 0xF0,  // 2
@@ -54,7 +58,7 @@ Chip8::Chip8() {
 void Chip8::load_rom(std::string path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
     std::ifstream::pos_type file_size = file.tellg();
-    std::vector<uint8_t> buffer(file_size);
+    std::vector<std::uint8_t> buffer(file_size);
     file.seekg(0, std::ios::beg);
     file.read(reinterpret_cast<char*>(buffer.data()), file_size);
     for (int i = 0; i < file_size; i++) {
@@ -64,10 +68,10 @@ void Chip8::load_rom(std::string path) {
 
 void Chip8::emulate_cycle() {
     opcode = memory[pc] << 8 | memory[pc + 1];  // get instruction
-    uint16_t x = (opcode & 0x0F00) >> 8;        // second 4 bits e.g. 0xA(B)CD
-    uint16_t y = (opcode & 0x00F0) >> 4;        // third 4 bits e.g. 0xAB(C)D
-    uint16_t kk = opcode & 0x00FF;              // lower byte e.g. 0xAB(CD)
-    uint16_t n = opcode & 0x000F;               // last 4 bits e.g. 0xABC(D)
+    std::uint16_t x = (opcode & 0x0F00) >> 8;   // second 4 bits e.g. 0xA(B)CD
+    std::uint16_t y = (opcode & 0x00F0) >> 4;   // third 4 bits e.g. 0xAB(C)D
+    std::uint16_t kk = opcode & 0x00FF;         // lower byte e.g. 0xAB(CD)
+    std::uint16_t n = opcode & 0x000F;          // last 4 bits e.g. 0xABC(D)
 
     switch (opcode & 0xF000) {  // first 4 bits decide the instruction
         case 0x0000:            // possible instructions are 0x00E0 or 0x00EE
@@ -180,10 +184,32 @@ void Chip8::emulate_cycle() {
             break;
         case 0xC000:  // 0xCxkk, set Vx = random byte and kk
             pc += 2;
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<> dis(0, 255);
-            V[x] = dis(gen) & kk;
-        case 0xD000:  // 0xDxyn
+            {  // to prevent initialization error
+                V[x] = std::uniform_int_distribution<>(0, 255)(gen) & kk;
+            }
+            break;
+        case 0xD000:  // 0xDxyn, draws sprite
+            // sprite is 8 x n pixels and located at (Vx, Vy)
+            draw_flag = true;
+            V[0xF] = 0;
+            std::uint8_t pixel_row;  // each pixel in a row is 1 bit
+            for (int y = 0; y < n; ++y) {
+                pixel_row = memory[I + y];  // sprite starts at I
+                for (int x = 0; x < 8; ++x) {
+                    // go through the row 1 bit at a time
+                    // true if pixel needs to be drawn
+                    if (pixel_row & (0b10000000 >> x)) {
+                        // the coordinate in row-major form
+                        // must be modded with 2048 for proper wrapping
+                        std::uint16_t coord = (V[x] + x + ((V[y] + y) * 64)) % 2048;
+                        bool collision = (graphics[coord] == 1);
+                        // OR with collision because VF is 1 when there is at
+                        // least one collision
+                        V[0xF] |= collision;
+                        graphics[coord] ^= 1;
+                    }
+                }
+            }
+            break;
     }
 }
