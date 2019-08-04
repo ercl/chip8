@@ -42,29 +42,33 @@ int main() {
 
     std::array<std::uint32_t, 64 * 32> spixels;
     spixels.fill(0xFFFFFFFF);
-    std::uint32_t* pixels = nullptr;
-    int pitch;
-
-    SDL_LockTexture(texture, nullptr, reinterpret_cast<void**>(&pixels), &pitch);
-    for (int i = 0; i < 64 * 32; i++) {
-        pixels[i] = spixels[i];
-    }
-    SDL_UnlockTexture(texture);
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-    SDL_RenderPresent(renderer);
 
     Chip8 chip8;
     chip8.load_rom("../roms/PONG");
 
     bool quit = false;
     while (!quit) {
+        chip8.emulate_cycle();
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quit = true;
             }
         }
-        SDL_Delay(10);
+        if (chip8.get_draw_flag()) {
+            chip8.set_draw_flag(false);
+            std::uint32_t* pixels = nullptr;
+            int pitch;
+
+            SDL_LockTexture(texture, nullptr, reinterpret_cast<void**>(&pixels), &pitch);
+            for (int i = 0; i < WIDTH * HEIGHT; i++) {
+                pixels[i] = (chip8.get_graphics_value(i) == 0) ? 0x000000FF : 0xFFFFFFFF;
+            }
+            SDL_UnlockTexture(texture);
+            SDL_RenderClear(renderer);
+            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+            SDL_RenderPresent(renderer);
+        }
+        SDL_Delay(3);
     }
 
     SDL_DestroyWindow(window);

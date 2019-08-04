@@ -196,15 +196,15 @@ void Chip8::emulate_cycle() {
             draw_flag = true;
             V[0xF] = 0;
             std::uint8_t pixel_row;  // each pixel in a row is 1 bit
-            for (int y = 0; y < n; ++y) {
-                pixel_row = memory[I + y];  // sprite starts at I
-                for (int x = 0; x < 8; ++x) {
+            for (int y_line = 0; y_line < n; ++y_line) {
+                pixel_row = memory[I + y_line];  // sprite starts at I
+                for (int x_line = 0; x_line < 8; ++x_line) {
                     // go through the row 1 bit at a time
                     // true if pixel needs to be drawn
-                    if (pixel_row & (0b10000000 >> x)) {
+                    if (pixel_row & (0b10000000 >> x_line)) {
                         // the coordinate in row-major form
                         // must be modded with 2048 for proper wrapping
-                        std::uint16_t coord = (V[x] + x + ((V[y] + y) * 64)) % 2048;
+                        std::uint16_t coord = (V[x] + x_line + ((V[y] + y_line) * 64)) % 2048;
                         bool collision = (graphics[coord] == 1);
                         // OR with collision because VF is 1 when there is at
                         // least one collision
@@ -279,14 +279,14 @@ void Chip8::emulate_cycle() {
                     for (int i = 0; i <= x; i++) {
                         memory[I + i] = V[i];
                     }
-                    I = I + x + 1;
+                    // I = I + x + 1;
                     break;
                 case 0x0065:  // 0xFx65, read V0 - Vx from memory starting at I
                     pc += 2;
                     for (int i = 0; i <= x; i++) {
                         V[i] = memory[I + i];
                     }
-                    I = I + x + 1;
+                    // I = I + x + 1;
                     break;
                 default:  // invalid opcode found
                     std::cerr << "Undefined 0xF000 opcode: " << opcode << "\n";
@@ -311,4 +311,8 @@ bool Chip8::get_draw_flag() {
 
 void Chip8::set_draw_flag(bool value) {
     draw_flag = value;
+}
+
+int Chip8::get_graphics_value(int i) {
+    return graphics[i];
 }
