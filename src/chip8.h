@@ -27,6 +27,7 @@ class Chip8 {
     Chip8();
     void load_rom(std::string path);
     void emulate_cycle();
+    bool get_draw_flag();
+    void set_draw_flag(bool value);
 };
-
 #endif

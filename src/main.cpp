@@ -71,6 +71,3 @@ int main() {
     SDL_Quit();
     return 0;
 }
-
-void init_sdl() {
-}

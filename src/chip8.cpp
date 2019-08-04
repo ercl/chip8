@@ -68,10 +68,11 @@ void Chip8::load_rom(std::string path) {
 
 void Chip8::emulate_cycle() {
     opcode = memory[pc] << 8 | memory[pc + 1];  // get instruction
-    std::uint16_t x = (opcode & 0x0F00) >> 8;   // second 4 bits e.g. 0xA(B)CD
-    std::uint16_t y = (opcode & 0x00F0) >> 4;   // third 4 bits e.g. 0xAB(C)D
-    std::uint16_t kk = opcode & 0x00FF;         // lower byte e.g. 0xAB(CD)
-    std::uint16_t n = opcode & 0x000F;          // last 4 bits e.g. 0xABC(D)
+
+    std::uint16_t x = (opcode & 0x0F00) >> 8;  // second 4 bits e.g. 0xA(B)CD
+    std::uint16_t y = (opcode & 0x00F0) >> 4;  // third 4 bits e.g. 0xAB(C)D
+    std::uint16_t kk = opcode & 0x00FF;        // lower byte e.g. 0xAB(CD)
+    std::uint16_t n = opcode & 0x000F;         // last 4 bits e.g. 0xABC(D)
 
     switch (opcode & 0xF000) {  // first 4 bits decide the instruction
         case 0x0000:            // possible instructions are 0x00E0 or 0x00EE
@@ -164,6 +165,7 @@ void Chip8::emulate_cycle() {
                     pc += 2;
                     V[0xF] = V[x] >> 7;  // MSB = 8th bit since VF is an uint8_t
                     V[x] = V[y] <<= 1;   // deviation from CowFod technical doc
+                    V[x] <<= 1;
                     break;
                 default:  // invalid opcode found
                     std::cerr << "Undefined 0x8000 opcode: " << opcode << "\n";
@@ -190,6 +192,7 @@ void Chip8::emulate_cycle() {
             break;
         case 0xD000:  // 0xDxyn, draws sprite
             // sprite is 8 x n pixels and located at (Vx, Vy)
+            pc += 2;
             draw_flag = true;
             V[0xF] = 0;
             std::uint8_t pixel_row;  // each pixel in a row is 1 bit
@@ -211,5 +214,101 @@ void Chip8::emulate_cycle() {
                 }
             }
             break;
+        case 0xE000:  // possible instructions are 0xEx9E, 0xExA1
+            switch (kk) {
+                case 0x009E:  // 0xEx9E, skip next instruction if keypress = Vx
+                    pc += 2;
+                    if (keys[V[x]]) {
+                        pc += 2;
+                    }
+                    break;
+                case 0x00A1:  // 0xExA1, skip next instruction if keypress != Vx
+                    pc += 2;
+                    if (!keys[V[x]]) {
+                        pc += 2;
+                    }
+                    break;
+                default:  // invalid opcode found
+                    std::cerr << "Undefined 0xEx00 opcode: " << opcode << "\n";
+            }
+            break;
+        case 0xF000:  // possible instructions: 0xFx(07,0A,15,18,1E,29,33,55,65)
+            switch (kk) {
+                case 0x0007:  // 0xFx07, set Vx = delay timer value
+                    pc += 2;
+                    V[x] = delay_timer;
+                    break;
+                case 0x000A:  // 0xFx0A, wait for keypress, store value in Vx
+                {
+                    bool key_pressed = false;
+                    for (int i = 0; i < keys.size(); i++) {
+                        if (keys[i]) {
+                            V[x] = i;
+                        }
+                    }
+                    if (key_pressed) {
+                        pc += 2;
+                    }
+                } break;
+                case 0x0015:  // 0xFx15, set delay timer = Vx
+                    pc += 2;
+                    delay_timer = V[x];
+                    break;
+                case 0x0018:  // 0xFx18, set sound timer = Vx
+                    pc += 2;
+                    sound_timer = V[x];
+                    break;
+                case 0x001E:  // 0xFx1E, set I = I + Vx
+                    pc += 2;
+                    V[0xF] = (I + V[x]) > 0xFFF;  // check for carry
+                    I += V[x];
+                    break;
+                case 0x0029:  // 0xFx29, set I = location of sprite for digit Vx
+                    pc += 2;
+                    I = V[x] * 5;  // sprites are 4x5
+                    break;
+                case 0x0033:
+                    // 0xFx33, store BCD representation of Vx at I, I+1, I+2
+                    pc += 2;
+                    memory[I] = V[x] / 100;
+                    memory[I + 1] = (V[x] / 10) % 10;
+                    memory[I + 2] = V[x] % 10;
+                    break;
+                case 0x0055:  // 0xFx55, stores V0 - Vx in memory starting at I
+                    pc += 2;
+                    for (int i = 0; i <= x; i++) {
+                        memory[I + i] = V[i];
+                    }
+                    I = I + x + 1;
+                    break;
+                case 0x0065:  // 0xFx65, read V0 - Vx from memory starting at I
+                    pc += 2;
+                    for (int i = 0; i <= x; i++) {
+                        V[i] = memory[I + i];
+                    }
+                    I = I + x + 1;
+                    break;
+                default:  // invalid opcode found
+                    std::cerr << "Undefined 0xF000 opcode: " << opcode << "\n";
+            }
+            break;
+        default:  // invalid opcode found
+            std::cerr << "Undefined opcode: " << opcode << "\n";
     }
+
+    // decrement the timers if they are nonzero
+    if (delay_timer > 0) {
+        delay_timer--;
+    }
+    if (sound_timer > 0) {
+        sound_timer--;
+    }
+}
+
+bool Chip8::get_draw_flag() {
+    return draw_flag;
+}
+
+void Chip8::set_draw_flag(bool value) {
+    draw_flag = value;
 }
