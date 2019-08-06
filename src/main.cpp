@@ -7,6 +7,9 @@
 constexpr int WIDTH = 64;
 constexpr int HEIGHT = 32;
 constexpr int SCALE = 10;
+constexpr int FPS = 60;
+constexpr int TICKS_PER_FRAME = 1000 / FPS;
+constexpr int INSTRUCTIONS_PER_STEP = 10;
 
 void sdl_error() {
     std::cerr << "SDL has encountered an error: ";
@@ -30,7 +33,7 @@ int main() {
         sdl_error();
     }
 
-    renderer = SDL_CreateRenderer(window, -1, 0);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == nullptr) {
         sdl_error();
     }
@@ -40,15 +43,17 @@ int main() {
         sdl_error();
     }
 
-    std::array<std::uint32_t, 64 * 32> spixels;
-    spixels.fill(0xFFFFFFFF);
-
     Chip8 chip8;
-    chip8.load_rom("../roms/PONG");
+    chip8.load_rom("../roms/PONG2");
 
+    std::uint32_t start;
+    std::uint32_t delta_time;
     bool quit = false;
     while (!quit) {
-        chip8.emulate_cycle();
+        start = SDL_GetTicks();
+        for (int i = 0; i < INSTRUCTIONS_PER_STEP; i++) {
+            chip8.emulate_cycle();
+        }
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 quit = true;
@@ -58,7 +63,6 @@ int main() {
             chip8.set_draw_flag(false);
             std::uint32_t* pixels = nullptr;
             int pitch;
-
             SDL_LockTexture(texture, nullptr, reinterpret_cast<void**>(&pixels), &pitch);
             for (int i = 0; i < WIDTH * HEIGHT; i++) {
                 pixels[i] = (chip8.get_graphics_value(i) == 0) ? 0x000000FF : 0xFFFFFFFF;
@@ -68,7 +72,11 @@ int main() {
             SDL_RenderCopy(renderer, texture, nullptr, nullptr);
             SDL_RenderPresent(renderer);
         }
-        SDL_Delay(3);
+        delta_time = SDL_GetTicks() - start;
+        if (TICKS_PER_FRAME > delta_time) {
+            chip8.step_timers();
+            SDL_Delay(TICKS_PER_FRAME - delta_time);
+        }
     }
 
     SDL_DestroyWindow(window);

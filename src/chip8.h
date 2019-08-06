@@ -30,5 +30,6 @@ class Chip8 {
     bool get_draw_flag();
     void set_draw_flag(bool value);
     int get_graphics_value(int i);
+    void step_timers();
 };
 #endif

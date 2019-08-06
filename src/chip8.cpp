@@ -165,7 +165,6 @@ void Chip8::emulate_cycle() {
                     pc += 2;
                     V[0xF] = V[x] >> 7;  // MSB = 8th bit since VF is an uint8_t
                     V[x] = V[y] <<= 1;   // deviation from CowFod technical doc
-                    V[x] <<= 1;
                     break;
                 default:  // invalid opcode found
                     std::cerr << "Undefined 0x8000 opcode: " << opcode << "\n";
@@ -295,14 +294,6 @@ void Chip8::emulate_cycle() {
         default:  // invalid opcode found
             std::cerr << "Undefined opcode: " << opcode << "\n";
     }
-
-    // decrement the timers if they are nonzero
-    if (delay_timer > 0) {
-        delay_timer--;
-    }
-    if (sound_timer > 0) {
-        sound_timer--;
-    }
 }
 
 bool Chip8::get_draw_flag() {
@@ -315,4 +306,13 @@ void Chip8::set_draw_flag(bool value) {
 
 int Chip8::get_graphics_value(int i) {
     return graphics[i];
+}
+
+void Chip8::step_timers() {
+    if (delay_timer > 0) {
+        delay_timer--;
+    }
+    if (sound_timer > 0) {
+        sound_timer--;
+    }
 }
