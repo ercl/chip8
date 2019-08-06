@@ -1,4 +1,5 @@
 #include "chip8.h"
+#include <SDL2/SDL.h>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -154,7 +155,7 @@ void Chip8::emulate_cycle() {
                 case 0x0006:  // 0x8xy6, Vx = Vx SHR 1, VF = LSB prior to shift
                     pc += 2;
                     V[0xF] = V[x] & 1;  // set as V[x]'s least significant bit
-                    V[x] = V[y] >>= 1;  // deviation from CowGod technical doc
+                    V[x] >>= 1;
                     break;
                 case 0x0007:  // 0x8xy7, set Vx = Vy - Vx, VF = NOT borrow
                     pc += 2;
@@ -164,7 +165,7 @@ void Chip8::emulate_cycle() {
                 case 0x000E:  // 0x8xyE, Vx = Vx SHL 1, VF = MSB prior to shift
                     pc += 2;
                     V[0xF] = V[x] >> 7;  // MSB = 8th bit since VF is an uint8_t
-                    V[x] = V[y] <<= 1;   // deviation from CowFod technical doc
+                    V[x] <<= 1;
                     break;
                 default:  // invalid opcode found
                     std::cerr << "Undefined 0x8000 opcode: " << opcode << "\n";
@@ -239,16 +240,20 @@ void Chip8::emulate_cycle() {
                     break;
                 case 0x000A:  // 0xFx0A, wait for keypress, store value in Vx
                 {
-                    bool key_pressed = false;
-                    for (int i = 0; i < keys.size(); i++) {
-                        if (keys[i]) {
+                    bool waiting = true;
+                    for (int i = 0; i < keys.size(); ++i) {
+                        if (keys[i] != 0) {
                             V[x] = i;
+                            waiting = false;
+                            break;
                         }
                     }
-                    if (key_pressed) {
-                        pc += 2;
+                    if (waiting) {
+                        return;
                     }
-                } break;
+                    pc += 2;
+                    break;
+                }
                 case 0x0015:  // 0xFx15, set delay timer = Vx
                     pc += 2;
                     delay_timer = V[x];
@@ -278,14 +283,12 @@ void Chip8::emulate_cycle() {
                     for (int i = 0; i <= x; i++) {
                         memory[I + i] = V[i];
                     }
-                    // I = I + x + 1;
                     break;
                 case 0x0065:  // 0xFx65, read V0 - Vx from memory starting at I
                     pc += 2;
                     for (int i = 0; i <= x; i++) {
                         V[i] = memory[I + i];
                     }
-                    // I = I + x + 1;
                     break;
                 default:  // invalid opcode found
                     std::cerr << "Undefined 0xF000 opcode: " << opcode << "\n";
@@ -296,18 +299,6 @@ void Chip8::emulate_cycle() {
     }
 }
 
-bool Chip8::get_draw_flag() {
-    return draw_flag;
-}
-
-void Chip8::set_draw_flag(bool value) {
-    draw_flag = value;
-}
-
-int Chip8::get_graphics_value(int i) {
-    return graphics[i];
-}
-
 void Chip8::step_timers() {
     if (delay_timer > 0) {
         delay_timer--;
@@ -315,4 +306,24 @@ void Chip8::step_timers() {
     if (sound_timer > 0) {
         sound_timer--;
     }
+}
+
+void Chip8::press_key(int keycode) {
+    keys[keycode] = 1;
+}
+
+void Chip8::release_key(int keycode) {
+    keys[keycode] = 0;
+}
+
+void Chip8::reset_draw_flag() {
+    draw_flag = false;
+}
+
+std::uint8_t Chip8::get_pixel_data(int i) {
+    return graphics[i];
+}
+
+bool Chip8::get_draw_flag() {
+    return draw_flag;
 }

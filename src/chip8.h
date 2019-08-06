@@ -11,8 +11,8 @@ class Chip8 {
     std::array<uint8_t, 4096> memory;       // ram, first 512 bytes reserved
     std::array<uint8_t, 16> V;              // general registers, VF = carry bit
     std::array<uint16_t, 16> stack;         // subroutine return addresses
-    std::array<uint8_t, 64 * 32> graphics;  // holds pixel data
     std::array<uint8_t, 16> keys;           // stores hexadecimal keypad
+    std::array<uint8_t, 64 * 32> graphics;  // holds pixel data
     std::uint8_t delay_timer;               // decrements at 60Hz when nonzero
     std::uint8_t sound_timer;               // decrements at 60Hz when nonzero
     std::uint16_t I;                        // stores memory addresses
@@ -27,9 +27,11 @@ class Chip8 {
     Chip8();
     void load_rom(std::string path);
     void emulate_cycle();
-    bool get_draw_flag();
-    void set_draw_flag(bool value);
-    int get_graphics_value(int i);
+    void press_key(int keycode);
+    void release_key(int keycode);
     void step_timers();
+    bool get_draw_flag();
+    void reset_draw_flag();
+    std::uint8_t get_pixel_data(int i);
 };
 #endif

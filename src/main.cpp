@@ -11,6 +11,12 @@ constexpr int FPS = 60;
 constexpr int TICKS_PER_FRAME = 1000 / FPS;
 constexpr int INSTRUCTIONS_PER_STEP = 10;
 
+constexpr std::array<SDL_Keycode, 16> keymap{
+    SDLK_x, SDLK_1, SDLK_2, SDLK_3,   // 0 1 2 3
+    SDLK_q, SDLK_w, SDLK_e, SDLK_a,   // 4 5 6 7
+    SDLK_s, SDLK_d, SDLK_z, SDLK_c,   // 8 9 A B
+    SDLK_4, SDLK_r, SDLK_f, SDLK_v};  // C D E F
+
 void sdl_error() {
     std::cerr << "SDL has encountered an error: ";
     std::cerr << SDL_GetError() << "\n";
@@ -55,17 +61,33 @@ int main() {
             chip8.emulate_cycle();
         }
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
-                quit = true;
+            switch (event.type) {
+                case SDL_QUIT:
+                    quit = true;
+                    break;
+                case SDL_KEYDOWN:
+                    for (int i = 0; i < keymap.size(); i++) {
+                        if (event.key.keysym.sym == keymap[i]) {
+                            chip8.press_key(i);
+                        }
+                    }
+                    break;
+                case SDL_KEYUP:
+                    for (int i = 0; i < keymap.size(); i++) {
+                        if (event.key.keysym.sym == keymap[i]) {
+                            chip8.release_key(i);
+                        }
+                    }
+                    break;
             }
         }
         if (chip8.get_draw_flag()) {
-            chip8.set_draw_flag(false);
+            chip8.reset_draw_flag();
             std::uint32_t* pixels = nullptr;
             int pitch;
             SDL_LockTexture(texture, nullptr, reinterpret_cast<void**>(&pixels), &pitch);
             for (int i = 0; i < WIDTH * HEIGHT; i++) {
-                pixels[i] = (chip8.get_graphics_value(i) == 0) ? 0x000000FF : 0xFFFFFFFF;
+                pixels[i] = (chip8.get_pixel_data(i) == 0) ? 0x000000FF : 0xFFFFFFFF;
             }
             SDL_UnlockTexture(texture);
             SDL_RenderClear(renderer);
@@ -79,6 +101,8 @@ int main() {
         }
     }
 
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
