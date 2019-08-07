@@ -327,3 +327,7 @@ std::uint8_t Chip8::get_pixel_data(int i) {
 bool Chip8::get_draw_flag() {
     return draw_flag;
 }
+
+std::uint8_t Chip8::get_sound_timer() {
+    return sound_timer;
+}

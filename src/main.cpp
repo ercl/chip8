@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 #include <array>
 #include <cstdint>
 #include <iostream>
@@ -49,8 +50,27 @@ int main() {
         sdl_error();
     }
 
+    Mix_Chunk* chunk = nullptr;
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cerr << "SDL_mixer has encountered an error: ";
+        std::cerr << Mix_GetError() << "\n";
+        SDL_Quit();
+        Mix_Quit();
+        exit(1);
+    }
+
+    chunk = Mix_LoadWAV("../resources/beep.wav");
+    if (chunk == nullptr) {
+        std::cerr << "SDL_mixer has encountered an error: ";
+        std::cerr << Mix_GetError() << "\n";
+        SDL_Quit();
+        Mix_Quit();
+        exit(1);
+    }
+
     Chip8 chip8;
-    chip8.load_rom("../roms/PONG2");
+    chip8.load_rom("../roms/MAZE");
 
     std::uint32_t start;
     std::uint32_t delta_time;
@@ -81,6 +101,11 @@ int main() {
                     break;
             }
         }
+
+        if (chip8.get_sound_timer() > 0) {
+            Mix_PlayChannel(-1, chunk, 0);
+        }
+
         if (chip8.get_draw_flag()) {
             chip8.reset_draw_flag();
             std::uint32_t* pixels = nullptr;
@@ -100,10 +125,11 @@ int main() {
             SDL_Delay(TICKS_PER_FRAME - delta_time);
         }
     }
-
+    Mix_FreeChunk(chunk);
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    Mix_Quit();
     SDL_Quit();
     return 0;
 }

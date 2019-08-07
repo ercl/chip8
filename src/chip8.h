@@ -33,5 +33,6 @@ class Chip8 {
     bool get_draw_flag();
     void reset_draw_flag();
     std::uint8_t get_pixel_data(int i);
+    std::uint8_t get_sound_timer();
 };
 #endif
