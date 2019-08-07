@@ -63,15 +63,6 @@ void init_audio(Mix_Chunk*& chunk) {
     }
 }
 
-void quit() {
-    Mix_FreeChunk(chunk);
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    Mix_Quit();
-    SDL_Quit();
-}
-
 int main(int argc, char* argv[]) {
     SDL_Window* window = nullptr;
     SDL_Texture* texture = nullptr;
@@ -83,7 +74,11 @@ int main(int argc, char* argv[]) {
     init_audio(chunk);
 
     Chip8 chip8;
-    chip8.load_rom("../roms/WIPEOFF");
+    if (argc > 1) {
+        chip8.load_rom(argv[1]);
+    } else {
+        chip8.load_rom("../roms/PONG2");
+    }
 
     std::uint32_t start_time;
     std::uint32_t delta_time;
@@ -138,6 +133,11 @@ int main(int argc, char* argv[]) {
             SDL_Delay(TICKS_PER_FRAME - delta_time);
         }
     }
-    quit();
+    Mix_FreeChunk(chunk);
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    Mix_Quit();
+    SDL_Quit();
     return 0;
 }
