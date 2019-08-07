@@ -25,16 +25,10 @@ void sdl_error() {
     exit(1);
 }
 
-int main() {
-    SDL_Window* window = nullptr;
-    SDL_Texture* texture = nullptr;
-    SDL_Renderer* renderer = nullptr;
-    SDL_Event event;
-
+void init_sdl(SDL_Window*& window, SDL_Texture*& texture, SDL_Renderer*& renderer) {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         sdl_error();
     }
-
     window = SDL_CreateWindow("chip8", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH * SCALE, HEIGHT * SCALE, SDL_WINDOW_SHOWN);
     if (window == nullptr) {
         sdl_error();
@@ -49,9 +43,9 @@ int main() {
     if (texture == nullptr) {
         sdl_error();
     }
+}
 
-    Mix_Chunk* chunk = nullptr;
-
+void init_audio(Mix_Chunk*& chunk) {
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
         std::cerr << "SDL_mixer has encountered an error: ";
         std::cerr << Mix_GetError() << "\n";
@@ -59,7 +53,6 @@ int main() {
         Mix_Quit();
         exit(1);
     }
-
     chunk = Mix_LoadWAV("../resources/beep.wav");
     if (chunk == nullptr) {
         std::cerr << "SDL_mixer has encountered an error: ";
@@ -68,15 +61,35 @@ int main() {
         Mix_Quit();
         exit(1);
     }
+}
+
+void quit() {
+    Mix_FreeChunk(chunk);
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    Mix_Quit();
+    SDL_Quit();
+}
+
+int main(int argc, char* argv[]) {
+    SDL_Window* window = nullptr;
+    SDL_Texture* texture = nullptr;
+    SDL_Renderer* renderer = nullptr;
+    Mix_Chunk* chunk = nullptr;
+    SDL_Event event;
+
+    init_sdl(window, texture, renderer);
+    init_audio(chunk);
 
     Chip8 chip8;
-    chip8.load_rom("../roms/MAZE");
+    chip8.load_rom("../roms/WIPEOFF");
 
-    std::uint32_t start;
+    std::uint32_t start_time;
     std::uint32_t delta_time;
     bool quit = false;
     while (!quit) {
-        start = SDL_GetTicks();
+        start_time = SDL_GetTicks();
         for (int i = 0; i < INSTRUCTIONS_PER_STEP; i++) {
             chip8.emulate_cycle();
         }
@@ -119,17 +132,12 @@ int main() {
             SDL_RenderCopy(renderer, texture, nullptr, nullptr);
             SDL_RenderPresent(renderer);
         }
-        delta_time = SDL_GetTicks() - start;
+        delta_time = SDL_GetTicks() - start_time;
         if (TICKS_PER_FRAME > delta_time) {
             chip8.step_timers();
             SDL_Delay(TICKS_PER_FRAME - delta_time);
         }
     }
-    Mix_FreeChunk(chunk);
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    Mix_Quit();
-    SDL_Quit();
+    quit();
     return 0;
 }

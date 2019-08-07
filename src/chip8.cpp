@@ -1,5 +1,4 @@
 #include "chip8.h"
-#include <SDL2/SDL.h>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
