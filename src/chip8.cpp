@@ -5,29 +5,17 @@
 #include <random>
 #include <vector>
 
-Chip8::Chip8() {
-    // program counter must start at memory location 0x200
-    pc = 0x200;
-
-    // the stack, display, memory, and key arrays must be cleared
-    memory.fill(0);
-    V.fill(0);
-    keys.fill(0);
-    graphics.fill(0);
-    stack.fill(0);
-
-    // all registers other than the program counter must also be set to 0
-    delay_timer = 0;
-    sound_timer = 0;
-    I = 0;
-    sp = 0;
-
-    // no initial instruction
-    opcode = 0;
-
-    // nothing to draw initially
-    draw_flag = false;
-
+Chip8::Chip8() : memory(),  // everything but pc must be cleared initially
+                 V(),
+                 stack(),
+                 keys(),
+                 graphics(),
+                 delay_timer(0),
+                 sound_timer(0),
+                 I(0),
+                 pc(0x200),  // program counter must start at 0x200 in memory
+                 sp(0),
+                 draw_flag(false) {
     // initialize random number generator
     gen.seed(rd());
 
@@ -50,24 +38,39 @@ Chip8::Chip8() {
         0xF0, 0x80, 0xF0, 0x80, 0xF0,  // E
         0xF0, 0x80, 0xF0, 0x80, 0x80   // F
     }};
-    for (int i = 0; i < 80; ++i) {
-        memory[i] = fontset[i];
-    }
+    std::copy(fontset.begin(), fontset.end(), memory.begin());
 }
 
-void Chip8::load_rom(std::string path) {
+void Chip8::load_rom(std::string const& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
+    if (!file) {
+        std::cerr << "Rom Load Error: failed to open file\n";
+        exit(1);
+    }
+
     std::ifstream::pos_type file_size = file.tellg();
+    if (file_size == std::ifstream::pos_type(-1)) {  // failed to get fize size
+        std::cerr << "Rom Load Error: failed to get file size\n";
+    }
+    if (file_size > memory.size() - 512) {
+        std::cerr << "Rom Load Error: rom cannot fit in memory\n";
+    }
+
     std::vector<std::uint8_t> buffer(file_size);
     file.seekg(0, std::ios::beg);
-    file.read(reinterpret_cast<char*>(buffer.data()), file_size);
-    for (int i = 0; i < file_size; i++) {
-        memory[i + 512] = buffer[i];  // first 512 bytes are reserved
+    if (!file) {
+        std::cerr << "Rom Load Error: failed to seek data\n";
     }
+
+    file.read(reinterpret_cast<char*>(buffer.data()), file_size);
+    if (!file) {
+        std::cerr << "Rom Load Error: failed to read rom\n";
+    }
+    std::copy(buffer.begin(), buffer.end(), memory.begin() + 512);
 }
 
 void Chip8::emulate_cycle() {
-    opcode = memory[pc] << 8 | memory[pc + 1];  // get instruction
+    std::uint32_t opcode = memory[pc] << 8 | memory[pc + 1];  // get instruction
 
     std::uint16_t x = (opcode & 0x0F00) >> 8;  // second 4 bits e.g. 0xA(B)CD
     std::uint16_t y = (opcode & 0x00F0) >> 4;  // third 4 bits e.g. 0xAB(C)D
@@ -155,6 +158,7 @@ void Chip8::emulate_cycle() {
                     pc += 2;
                     V[0xF] = V[x] & 1;  // set as V[x]'s least significant bit
                     V[x] >>= 1;
+                    // V[x] = V[y] >> 1;  // breaks Zophar ROMS
                     break;
                 case 0x0007:  // 0x8xy7, set Vx = Vy - Vx, VF = NOT borrow
                     pc += 2;
@@ -165,6 +169,7 @@ void Chip8::emulate_cycle() {
                     pc += 2;
                     V[0xF] = V[x] >> 7;  // MSB = 8th bit since VF is an uint8_t
                     V[x] <<= 1;
+                    // V[x] = V[y] << 1;  // breaks Zophar ROMS
                     break;
                 default:  // invalid opcode found
                     std::cerr << "Undefined 0x8000 opcode: " << opcode << "\n";

@@ -39,7 +39,7 @@ void init_sdl(SDL_Window*& window, SDL_Texture*& texture, SDL_Renderer*& rendere
         sdl_error();
     }
 
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 64, 32);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
     if (texture == nullptr) {
         sdl_error();
     }

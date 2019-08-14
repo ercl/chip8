@@ -18,14 +18,13 @@ class Chip8 {
     std::uint16_t I;                        // stores memory addresses
     std::uint16_t pc;                       // currently executing address
     std::uint16_t sp;                       // points to top of stack
-    std::uint16_t opcode;                   // current instruction
     std::random_device rd;                  // used to obtain seed for generator
     std::mt19937 gen;                       // generates pseudo-random numbers
     bool draw_flag;                         // true when gfx needs to be updated
 
    public:
     Chip8();
-    void load_rom(std::string path);
+    void load_rom(std::string const& path);
     void emulate_cycle();
     void press_key(int keycode);
     void release_key(int keycode);
