@@ -96,31 +96,31 @@ int main(int argc, char* argv[]) {
                 case SDL_KEYDOWN:
                     for (int i = 0; i < keymap.size(); i++) {
                         if (event.key.keysym.sym == keymap[i]) {
-                            chip8.press_key(i);
+                            chip8.keys[i] = 1;
                         }
                     }
                     break;
                 case SDL_KEYUP:
                     for (int i = 0; i < keymap.size(); i++) {
                         if (event.key.keysym.sym == keymap[i]) {
-                            chip8.release_key(i);
+                            chip8.keys[i] = 0;
                         }
                     }
                     break;
             }
         }
 
-        if (chip8.get_sound_timer() > 0) {
+        if (chip8.sound_timer > 0) {
             Mix_PlayChannel(-1, chunk, 0);
         }
 
-        if (chip8.get_draw_flag()) {
-            chip8.reset_draw_flag();
+        if (chip8.draw_flag) {
+            chip8.draw_flag = false;
             std::uint32_t* pixels = nullptr;
             int pitch;
             SDL_LockTexture(texture, nullptr, reinterpret_cast<void**>(&pixels), &pitch);
             for (int i = 0; i < WIDTH * HEIGHT; i++) {
-                pixels[i] = (chip8.get_pixel_data(i) == 0) ? 0x000000FF : 0xFFFFFFFF;
+                pixels[i] = (chip8.graphics[i] == 0) ? 0x000000FF : 0xFFFFFFFF;
             }
             SDL_UnlockTexture(texture);
             SDL_RenderClear(renderer);

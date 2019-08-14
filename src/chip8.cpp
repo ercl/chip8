@@ -311,27 +311,3 @@ void Chip8::step_timers() {
         sound_timer--;
     }
 }
-
-void Chip8::press_key(int keycode) {
-    keys[keycode] = 1;
-}
-
-void Chip8::release_key(int keycode) {
-    keys[keycode] = 0;
-}
-
-void Chip8::reset_draw_flag() {
-    draw_flag = false;
-}
-
-std::uint8_t Chip8::get_pixel_data(int i) {
-    return graphics[i];
-}
-
-bool Chip8::get_draw_flag() {
-    return draw_flag;
-}
-
-std::uint8_t Chip8::get_sound_timer() {
-    return sound_timer;
-}
