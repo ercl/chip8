@@ -29,16 +29,16 @@ Afterwards, compile and run.
     ./main.out <ROM>
 ```
 
-If \<ROM> is not given, PONG2 will be loaded instead. 
+If \<ROM> is not given, PONG2 will be loaded instead by default. 
 
 ## Notes
  * TICTAC and CONNECT4 only work properly when INSTRUCTIONS_PER_STEP = 1 in main.cpp
  * Changing INSTRUCTIONS_PER_STEP will make some games run better
  * The original Chip8 numpad is not used. The keypad is defined as:
   ```
-    Original                 Current
+    Current    instead of    Original
     1 2 3 4                  1 2 3 C
-    Q W E R    instead of    4 5 6 D
+    Q W E R                  4 5 6 D
     A S D F                  7 8 9 E
     Z X C V                  A 0 B F
   ```
