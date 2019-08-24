@@ -19,13 +19,13 @@ class Chip8 {
     std::mt19937 gen;                  // generates pseudo-random numbers
 
    public:
-    Chip8();
-    void load_rom(std::string const& path);  // attempts to load user input rom
-    void emulate_cycle();                    // go through a single cycle
-    void step_timers();                      // decrement sound and delay timers
-    std::array<uint8_t, 16> keys;            // stores hexadecimal keypad
-    std::array<uint8_t, 64 * 32> graphics;   // holds pixel data
-    std::uint8_t sound_timer;                // decrements at 60Hz when nonzero
-    bool draw_flag;                          // gfx should be updated when true
+    Chip8();                                     // loads fontset and variables
+    void load_rom(std::string const& path);      // loads user-provided rom
+    void emulate_cycle();                        // go through a single cycle
+    void step_timers();                          // decrement all timers by one
+    std::array<std::uint8_t, 16> keys;           // stores hexadecimal keypad
+    std::array<std::uint8_t, 64 * 32> graphics;  // holds pixel data
+    std::uint8_t sound_timer;                    // decrement at 60Hz if nonzero
+    bool draw_flag;                              // update gfx when true
 };
 #endif
