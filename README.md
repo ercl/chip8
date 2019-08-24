@@ -16,7 +16,7 @@ A Chip-8 Emulator written in C++ using SDL2 and SDL_Mixer.
 
 ## Usage
 
-SDL2 and SDL_Mixer must be installed. For Mac users, you can install them with Homebrew:
+SDL2 and SDL_Mixer must be installed. For Mac users, they can be installed with Homebrew:
 ```
     brew install sdl2 sdl_mixer
 ```
