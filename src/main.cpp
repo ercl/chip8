@@ -10,7 +10,7 @@ constexpr int HEIGHT = 32;
 constexpr int SCALE = 10;
 constexpr int FPS = 60;
 constexpr int TICKS_PER_FRAME = 1000 / FPS;
-constexpr int INSTRUCTIONS_PER_STEP = 10;
+constexpr int INSTRUCTIONS_PER_STEP = 1;
 
 constexpr std::array<SDL_Keycode, 16> keymap{
     SDLK_x, SDLK_1, SDLK_2, SDLK_3,   // 0 1 2 3
